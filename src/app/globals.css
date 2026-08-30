@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-orange: #ff6a00;
+  --color-brand-orange-hover: #e05d00;
+  --color-brand-amber: #f39c12;
+  --color-dark-bg: #07080c;
+  --color-dark-card: #12141c;
+  --color-dark-card-hover: #1b1e2c;
+  
+  --font-serif: var(--font-outfit), Georgia, serif;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #07080c;
+  --foreground: #f8fafc;
+}
+
+.dark {
+  --background: #07080c;
+  --foreground: #f8fafc;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+}
+
+/* Custom premium scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+::-webkit-scrollbar-thumb {
+  background: #ff6a00;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e05d00;
+}
+
+/* Glassmorphism panels */
+.glass-panel-dark {
+  background: rgba(18, 20, 28, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Premium Text & Accent utilities */
+.text-gradient {
+  background: linear-gradient(135deg, #ffffff 20%, #a3a3a3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-orange {
+  box-shadow: 0 0 30px rgba(255, 106, 0, 0.25);
+}
+
+.glow-border {
+  border: 1px solid rgba(255, 106, 0, 0.4);
+}
+
+/* Banner overlay gradient */
+.overlay-gradient {
+  background: linear-gradient(to top, rgba(7, 8, 12, 1) 0%, rgba(7, 8, 12, 0.4) 60%, rgba(7, 8, 12, 0.1) 100%);
+}
+
+/* Pulse animation for safety light */
+@keyframes indicator-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.5; }
+}
+
+.indicator-dot {
+  animation: indicator-pulse 2s infinite ease-in-out;
+}
+
+/* Hide scrollbar for horizontal scroll containers */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
