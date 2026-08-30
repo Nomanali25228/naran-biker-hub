@@ -32,6 +32,17 @@ function createTransporter() {
     return null;
   }
 
+  // If using Gmail, use the native service configuration for optimal speed and reliability
+  if (host === "smtp.gmail.com" || user.endsWith("@gmail.com")) {
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user,
+        pass,
+      },
+    });
+  }
+
   return nodemailer.createTransport({
     host,
     port,
@@ -40,6 +51,8 @@ function createTransporter() {
       user,
       pass,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
   });
 }
 
@@ -129,23 +142,33 @@ export async function sendBookingEmails(data: BookingEmailData) {
   }
 
   try {
-    // Send email to Admin
-    await transporter.sendMail({
-      from: `"Naran Bikers Hub" <${process.env.SMTP_USER}>`,
-      to: adminEmail,
-      subject: `🚨 New Booking Request #${data.bookingId} - ${data.name} (${data.bikeModel})`,
-      html: adminHtml,
-    });
+    // Send email to Admin and Customer concurrently for instant delivery
+    const [adminResult, customerResult] = await Promise.allSettled([
+      transporter.sendMail({
+        from: `"Naran Bikers Hub" <${process.env.SMTP_USER}>`,
+        to: adminEmail,
+        subject: `🚨 New Booking Request #${data.bookingId} - ${data.name} (${data.bikeModel})`,
+        html: adminHtml,
+      }),
+      transporter.sendMail({
+        from: `"Naran Bikers Hub" <${process.env.SMTP_USER}>`,
+        to: data.email,
+        subject: `✅ Booking Request Received #${data.bookingId} - Naran Bikers Hub`,
+        html: customerHtml,
+      }),
+    ]);
 
-    // Send email to Customer
-    await transporter.sendMail({
-      from: `"Naran Bikers Hub" <${process.env.SMTP_USER}>`,
-      to: data.email,
-      subject: `✅ Booking Request Received #${data.bookingId} - Naran Bikers Hub`,
-      html: customerHtml,
-    });
+    if (adminResult.status === "rejected") {
+      console.error("Failed to send admin email:", adminResult.reason);
+    }
+    if (customerResult.status === "rejected") {
+      console.error("Failed to send customer email:", customerResult.reason);
+    }
 
-    return { success: true, mocked: false };
+    return {
+      success: adminResult.status === "fulfilled" || customerResult.status === "fulfilled",
+      mocked: false,
+    };
   } catch (error) {
     console.error("Error sending email:", error);
     return { success: false, error };
@@ -193,15 +216,15 @@ export async function sendContactInquiryEmail(data: ContactInquiryEmailData) {
   }
 
   try {
-    // Send email to Admin
-    await transporter.sendMail({
-      from: `"Naran Bikers Hub Inquiry" <${process.env.SMTP_USER}>`,
-      to: adminEmail,
-      subject: `📩 Contact Inquiry: ${data.topic} - ${data.name}`,
-      html: adminHtml,
-    });
+    const promises: Promise<unknown>[] = [
+      transporter.sendMail({
+        from: `"Naran Bikers Hub Inquiry" <${process.env.SMTP_USER}>`,
+        to: adminEmail,
+        subject: `📩 Contact Inquiry: ${data.topic} - ${data.name}`,
+        html: adminHtml,
+      }),
+    ];
 
-    // Send auto-reply to Customer if email provided
     if (data.email) {
       const customerAutoReplyHtml = `
         <div style="font-family: Arial, sans-serif; background-color: #0f0f11; color: #ffffff; padding: 30px; border-radius: 12px;">
@@ -227,14 +250,17 @@ export async function sendContactInquiryEmail(data: ContactInquiryEmailData) {
         </div>
       `;
 
-      await transporter.sendMail({
-        from: `"Naran Bikers Hub" <${process.env.SMTP_USER}>`,
-        to: data.email,
-        subject: `✅ We received your inquiry - Naran Bikers Hub`,
-        html: customerAutoReplyHtml,
-      });
+      promises.push(
+        transporter.sendMail({
+          from: `"Naran Bikers Hub" <${process.env.SMTP_USER}>`,
+          to: data.email,
+          subject: `✅ We received your inquiry - Naran Bikers Hub`,
+          html: customerAutoReplyHtml,
+        })
+      );
     }
 
+    await Promise.allSettled(promises);
     return { success: true, mocked: false };
   } catch (error) {
     console.error("Error sending inquiry email:", error);

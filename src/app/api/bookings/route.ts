@@ -32,21 +32,23 @@ export async function POST(request: Request) {
       notes: notes || "",
     });
 
-    // Send emails in background asynchronously
-    sendBookingEmails({
-      bookingId: booking.id,
-      name: booking.name,
-      email: booking.email,
-      phone: booking.phone,
-      bikeModel: booking.bikeModel,
-      pickupDate: booking.pickupDate,
-      returnDate: booking.returnDate,
-      days: booking.days,
-      gearNeeded: booking.gearNeeded,
-      notes: booking.notes,
-    }).catch((emailErr) => {
+    // Send emails immediately and wait for completion before function returns
+    try {
+      await sendBookingEmails({
+        bookingId: booking.id,
+        name: booking.name,
+        email: booking.email,
+        phone: booking.phone,
+        bikeModel: booking.bikeModel,
+        pickupDate: booking.pickupDate,
+        returnDate: booking.returnDate,
+        days: booking.days,
+        gearNeeded: booking.gearNeeded,
+        notes: booking.notes,
+      });
+    } catch (emailErr) {
       console.error("Failed to send booking emails:", emailErr);
-    });
+    }
 
     return Response.json({ booking }, { status: 201 });
   } catch (error) {
